@@ -454,7 +454,7 @@ public class Animator extends Thread {
 		if (animatorState == TERMINATING) {
 			terminate();
 		} else {
-			yield();
+			Thread.yield();
 		}
 	}
 
