@@ -1294,6 +1294,18 @@ public abstract class Program extends JApplet
 		if (appletStarter != null) appletStarter.stop();
 	}
 
+/* Method: main(args) */
+/**
+ * Instance main method used to start the program.
+ * An instance main method is used instead of a static main
+ * in order to use the runtime type of {@code this} to detect the correct program subclass.
+ *
+ * @param args An array of string arguments
+ */
+	public void main(String[] args) {
+		main(args, this);
+	}
+
 /* Static method: main(args) */
 /**
  * Every application must either contain a "Main-Class" entry in its
@@ -1312,50 +1324,33 @@ public abstract class Program extends JApplet
  *
  * @param args An array of string arguments
  */
-	public static void main(String[] args) {
+	public static void main(String[] args, Object obj) {
 		HashMap<String,String> ht = createParameterTable(args);
 		JTFTools.setDebugOptions(ht.get("debug"));
-		String className = ht.get("code");
-		if (className == null) {
-			className = JTFTools.getMainClass();
-		}
-		Class<?> mainClass = null;
-		Program program = null;
-		if (className != null) {
-			if (className.endsWith(".class")) {
-				className = className.substring(0, className.length() - 6);
-			}
-			className = className.replace('/', '.');
-			CommandLineProgram.checkIfHeadless(className);
-			try {
-				mainClass = Class.forName(className);
-			} catch (ClassNotFoundException ex) {
-				/* Empty */
-			}
-		}
-		if (mainClass != null) {
-			try {
-				Object obj = mainClass.newInstance();
-				if (obj instanceof Program) {
-					program = (Program) obj;
-					program.setStartupObject(null);
-				} else {
-					className = ht.get("program");
-					if (className == null) {
-						throw new ErrorException("Main class does not specify a program");
+
+		Program program = Optional.ofNullable(ht.get("code"))
+				.or(() -> Optional.ofNullable(System.getProperty("java.main")))
+				.map(JTFTools::processClassName)
+				.flatMap(JTFTools::newInstanceFromName)
+				.or(() -> Optional.ofNullable(obj))
+				.or(() -> Optional.ofNullable(JTFTools.readMainClassFromCommandLine(JTFTools.getCommandLine()))
+						.map(JTFTools::processClassName)
+						.flatMap(JTFTools::newInstanceFromName)
+				)
+				.map(programObj -> {
+					if (programObj instanceof Program program0) {
+						program0.setStartupObject(null);
+						return program0;
+					} else {
+						Program program0 = (Program) JTFTools.newInstanceFromName(
+										Optional.ofNullable(ht.get("program"))
+												.orElseThrow(() -> new ErrorException("Main class does not specify a program"))
+								)
+								.orElse(null);
+						if (program0 != null) program0.setStartupObject(programObj);
+						return program0;
 					}
-					program = (Program) Class.forName(className).newInstance();
-					program.setStartupObject(obj);
-				}
-			} catch (IllegalAccessException ex) {
-				/* Empty */
-			} catch (InstantiationException ex) {
-				/* Empty */
-			} catch (ClassNotFoundException ex) {
-				/* Empty */
-			}
-		}
-		if (program == null) throw new ErrorException("Cannot determine the main class.");
+				}).orElseThrow(() -> new ErrorException("Cannot determine the main class."));
 		program.setParameterTable(ht);
 		program.start();
 	}

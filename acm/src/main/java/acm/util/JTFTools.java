@@ -47,13 +47,13 @@ package acm.util;
 import acm.gui.*;
 import acm.io.*;
 import acm.program.*;
+
 import java.applet.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
-import java.security.*;
 import java.text.*;
 import java.util.*;
 import java.util.zip.*;
@@ -442,67 +442,90 @@ public class JTFTools {
 		}
 	}
 
-/* Static method: getMainClass() */
+/* Static method: readMainClassFromCommandLine(line) */
 /**
- * Returns the name of the main class.
+ * Attempts to read the name of the main class from the specified command
+ * line.  This strategy is a heuristic and will probably fail in many
+ * cases, but it will probably work in enough contexts to be useful.
+ * As noted in the documentation for the <code>main</code> method,
+ * programs can always avoid the need for this method by supplying their
+ * own version of <code>main</code>.
  *
- * @usage String className = JTFTools.getMainClass();
- * @return The name of the main class, or null if that class cannot be identified
- * @noshow
+ * @usage String className = readMainClassFromCommandLine(line);
+ * @param line The command line
+ * @return The name of the main class, or <code>null</code>
  */
-	public static String getMainClass() {
-		String className = null;
+	public static String readMainClassFromCommandLine(String line) {
+		if (testDebugOption("main")) {
+			System.out.println("Read class from command line: " + line);
+		}
+		if (line == null) return null;
+		boolean jarFlag = false;
 		try {
-			className = System.getProperty("java.main");
-		} catch (Exception ex) {
+			StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(line));
+			tokenizer.resetSyntax();
+			tokenizer.wordChars(33, 255);
+			tokenizer.quoteChar('"');
+			tokenizer.quoteChar('\'');
+			tokenizer.whitespaceChars(' ', ' ');
+			tokenizer.whitespaceChars('\t', '\t');
+			boolean cmdRead = false;
+			while (true) {
+				int tt = tokenizer.nextToken();
+				String token = tokenizer.sval;
+				switch (tt) {
+					case StreamTokenizer.TT_EOF:
+						return null;
+					case StreamTokenizer.TT_WORD: case '"': case '\'':
+						break;
+					default:
+						return null;
+				}
+				if (cmdRead) {
+					if (token.startsWith("-")) {
+						if (token.equals("-jar")) {
+							jarFlag = true;
+						} else if (token.equals("-cp") || token.equals("-classpath")) {
+							tokenizer.nextToken();
+						}
+					} else {
+						if (jarFlag) return readMainClassFromManifest(token);
+						if (testDebugOption("main")) {
+							System.out.println("Main class = " + token);
+						}
+						return token;
+					}
+				} else {
+					cmdRead = true;
+				}
+			}
+		} catch (IOException ex) {
 			/* Empty */
 		}
-		if (className == null) {
-			className = readMainClassFromClassPath();
+		return null;
+	}
+
+/* Static method: processClassName(className) */
+/**
+ * Processes the class name to be passed to {@link Class#forName(String)}
+ */
+	public static String processClassName(String className) {
+		if (className.endsWith(".class")) {
+			className = className.substring(0, className.length() - 6);
 		}
-		if (className == null) {
-			String commandLine = getCommandLine();
-			className = readMainClassFromCommandLine(commandLine);
-		}
+		className = className.replace('/', '.');
+		CommandLineProgram.checkIfHeadless(className);
 		return className;
 	}
 
-/* Static method: checkIfLoaded(className) */
-/**
- * Returns true if the specified class is already loaded.
- *
- * @usage if (JTFTools.checkIfLoaded(className)) . . .
- * @param className The name of the class
- * @return The boolean value true if the class is already loaded, and false otherwise
- * @noshow
- */
-	public static boolean checkIfLoaded(String className) {
-		if (Platform.compareVersion("1.2") < 0) return false;
-		boolean result = false;
+/* Static method: newInstanceFromName(className) */
+	public static Optional<Object> newInstanceFromName(String className) {
 		try {
-			if (System.getSecurityManager() != null) return false;
-			if (managerThatFails == null) {
-				try {
-					Class<?> managerThatFailsClass = Class.forName("acm.util.SecurityManagerThatFails");
-					managerThatFails = (SecurityManager) managerThatFailsClass.newInstance();
-				} catch (Exception ex) {
-					return false;
-				}
-			}
-			System.setSecurityManager(managerThatFails);
-			try {
-				result = (Class.forName(className) != null);
-			} catch (ExceptionInInitializerError err) {
-				result = true;
-			} catch (NoClassDefFoundError err) {
-				/* Empty */;
-			} finally {
-				System.setSecurityManager(null);
-			}
-		} catch (Exception ex) {
+			return Optional.of(Class.forName(className).newInstance());
+		} catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
 			/* Empty */
 		}
-		return result;
+		return Optional.empty();
 	}
 
 /* Static method: terminateAppletThreads(applet) */
@@ -979,136 +1002,6 @@ public class JTFTools {
 		}
 	}
 
-/* Private static method: readMainClassFromCommandLine(line) */
-/**
- * Attempts to read the name of the main class from the specified command
- * line.  This strategy is a heuristic and will probably fail in many
- * cases, but it will probably work in enough contexts to be useful.
- * As noted in the documentation for the <code>main</code> method,
- * programs can always avoid the need for this method by supplying their
- * own version of <code>main</code>.
- *
- * @usage String className = readMainClassFromCommandLine(line);
- * @param line The command line
- * @return The name of the main class, or <code>null</code>
- */
-	private static String readMainClassFromCommandLine(String line) {
-		if (testDebugOption("main")) {
-			System.out.println("Read class from command line: " + line);
-		}
-		if (line == null) return null;
-		boolean jarFlag = false;
-		try {
-			StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(line));
-			tokenizer.resetSyntax();
-			tokenizer.wordChars(33, 255);
-			tokenizer.quoteChar('"');
-			tokenizer.quoteChar('\'');
-			tokenizer.whitespaceChars(' ', ' ');
-			tokenizer.whitespaceChars('\t', '\t');
-			boolean cmdRead = false;
-			while (true) {
-				int tt = tokenizer.nextToken();
-				String token = tokenizer.sval;
-				switch (tt) {
-				  case StreamTokenizer.TT_EOF:
-					return null;
-				  case StreamTokenizer.TT_WORD: case '"': case '\'':
-					break;
-				  default:
-					return null;
-				}
-				if (cmdRead) {
-					if (token.startsWith("-")) {
-						if (token.equals("-jar")) {
-							jarFlag = true;
-						} else if (token.equals("-cp") || token.equals("-classpath")) {
-							tokenizer.nextToken();
-						}
-					} else {
-						if (jarFlag) return readMainClassFromManifest(token);
-						if (testDebugOption("main")) {
-							System.out.println("Main class = " + token);
-						}
-						return token;
-					}
-				} else {
-					cmdRead = true;
-				}
-			}
-		} catch (IOException ex) {
-			/* Empty */
-		}
-		return null;
-	}
-
-/* Private static method: readMainClassFromClassPath() */
-/**
- * Attempts to read the name of the main class by searching through
- * the class path to find any classes that are already loaded and that
- * extend Program.
- *
- * @usage String className = readMainClassFromClassPath();
- * @return The name of the main class, or <code>null</code>
- */
-	private static String readMainClassFromClassPath() {
-		String result = null;
-		String classpath = System.getProperty("java.class.path");
-		if (classpath == null) classpath = System.getProperty("user.dir");
-		if (classpath == null) return null;
-		if (testDebugOption("main")) {
-			System.out.println("Read class from class path: " + classpath);
-		}
-		StringTokenizer tokenizer = new StringTokenizer(classpath, ":;");
-		while (tokenizer.hasMoreTokens()) {
-			String token = tokenizer.nextToken();
-			File file = new File(token);
-			String[] candidates = null;
-			if (file.isDirectory()) {
-				candidates = file.list();
-			} else if (token.endsWith(".jar") && !nameAppears(token, SKIP_JARS)) {
-				try {
-					ZipFile zf = new ZipFile(file);
-					ArrayList<String> list = new ArrayList<String>();
-					Enumeration<?> entries = zf.entries();
-					while (entries.hasMoreElements()) {
-						list.add(((ZipEntry) entries.nextElement()).getName());
-					}
-					candidates = new String[list.size()];
-					for (int i = 0; i < candidates.length; i++) {
-						candidates[i] = list.get(i);
-					}
-				} catch (IOException ex) {
-					candidates = null;
-				}
-			}
-			if (candidates != null) {
-				for (int i = 0; i < candidates.length; i++) {
-					String fileName = candidates[i];
-					if (fileName.endsWith(".class")) {
-						String className = fileName.substring(0, fileName.lastIndexOf(".class"));
-						if (className.indexOf("/") == -1 && checkIfLoaded(className)) {
-							try {
-								Class<?> c = Class.forName(className);
-								Class[] types = { candidates.getClass() };
-								if (c.getMethod("main", types) != null) {
-									if (testDebugOption("main")) {
-										System.out.println("Main class = " + className);
-									}
-									if (result != null) return null;
-									result = className;
-								}
-							} catch (Exception ex) {
-								/* Empty */
-							}
-						}
-					}
-				}
-			}
-		}
-		return result;
-	}
-
 /* Protected static method: submitProject(program, progress) */
 /**
  * Submits this project as a mail message.
@@ -1533,21 +1426,12 @@ public class JTFTools {
 		"Monospaced", "Courier", "Monaco"
 	};
 
-/* List of jar files to skip */
-	private static final String[] SKIP_JARS = {
-		"acm.jar",
-		"acm11.jar",
-		"swingall.jar",
-		"patchJTF.jar"
-	};
-
-/* Static variables */
+	/* Static variables */
 	private static boolean fontFamilyTableInitialized = false;
 	private static String[] fontFamilyArray = null;
 	private static HashMap<String,String> fontFamilyTable = null;
 	private static HashMap<Thread,Applet> appletTable = new HashMap<Thread,Applet>();
 	private static Applet mostRecentApplet = null;
-	private static SecurityManager managerThatFails = null;
 	private static String debugOptions = null;
 
 }
@@ -1570,24 +1454,6 @@ class EmptyContainer extends Container {
 	public void update(Graphics g) {
 		paint(g);
 	}
-}
-
-/* Package class: SecurityManagerThatFails */
-/**
- * This class is an instance of the <code>SecurityManager</code> class
- * that invariably fails if it tries to read anything, even if executed
- * inside a <code>doPrivileged</code> block.
- */
-class SecurityManagerThatFails extends SecurityManager {
-
-	public void checkRead(String file) {
-		throw new SecurityException("always fail");
-	}
-
-	public void checkPermission(Permission perm) {
-		/* Empty */
-	}
-
 }
 
 /* Package class: DOSCommandLine */

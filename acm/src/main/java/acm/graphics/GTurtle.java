@@ -342,7 +342,7 @@ public class GTurtle extends GObject {
 		return false;
 	}
 
-/* Static method: main(args) */
+/* Method: main(args) */
 /**
  * Makes it possible for a <code>GTurtle</code> to be run under the control
  * of a <code>GraphicsProgram</code> object.
@@ -350,13 +350,13 @@ public class GTurtle extends GObject {
  * @usage main(args);
  * @param args An array of string arguments
  */
-	public static void main(String[] args) {
+	public void main(String[] args) {
 		String[] newArgs = new String[args.length + 1];
 		for (int i = 0; i < args.length; i++) {
 			newArgs[i] = args[i];
 		}
 		newArgs[args.length] = "program=acm.program.GObjectProgram";
-		Program.main(newArgs);
+		Program.main(newArgs, this);
 	}
 
 /* Inherited method: getLocation() */
