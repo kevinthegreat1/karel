@@ -359,12 +359,12 @@ public final class ClassUtils {
 	public static <T> List<Class<? extends T>> getClasses(Class<T> superClass, String folderName) {
 	    try {
 			List<Class<? extends T>> list = new ArrayList<Class<? extends T>>();
-			java.io.File folder = new java.io.File(folderName);
+			File folder = new File(folderName);
 			if (!folder.exists() || !folder.canRead()) {
 				return list;
 			}
 
-			for (java.io.File file : folder.listFiles(CLASS_FILTER)) {
+			for (File file : folder.listFiles(CLASS_FILTER)) {
 				String fileName = file.getName();
 				if (file.canRead() && !file.isDirectory() && fileName.endsWith(CLASS_EXTENSION)) {
 					try {
@@ -548,7 +548,7 @@ public final class ClassUtils {
 			this.extension = extension;
 		}
 
-		public boolean accept(java.io.File f) {
+		public boolean accept(File f) {
 			return f != null && f.exists() && f.canRead()
 					&& f.getName().endsWith(extension);
 		}

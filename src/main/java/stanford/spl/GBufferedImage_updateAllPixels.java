@@ -39,7 +39,7 @@ public class GBufferedImage_updateAllPixels extends JBESwingCommand {
 			GBufferedImage img = (GBufferedImage) gobj;
 			try {
 				img.fromStringBase64(base64);
-			} catch (java.io.IOException ioe) {
+			} catch (IOException ioe) {
 				ioe.printStackTrace();
 			}
 		}

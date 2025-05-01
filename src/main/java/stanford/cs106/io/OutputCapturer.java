@@ -5,8 +5,8 @@ import java.io.PrintStream;
 
 /** for capturing console output (for methods that do printlns) */
 public class OutputCapturer {
-    private static final PrintStream SYSTEM_OUT = java.lang.System.out;
-    private static final PrintStream SYSTEM_ERR = java.lang.System.err;
+    private static final PrintStream SYSTEM_OUT = System.out;
+    private static final PrintStream SYSTEM_ERR = System.err;
     private static ByteArrayOutputStream outputStream = null;
     
     /** Returns true if output is currently being captured. */

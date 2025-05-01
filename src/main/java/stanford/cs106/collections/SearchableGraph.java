@@ -1,4 +1,4 @@
-///*
+package stanford.cs106.collections; ///*
 // * @author Marty Stepp
 // * @version 2015/06/06
 // */

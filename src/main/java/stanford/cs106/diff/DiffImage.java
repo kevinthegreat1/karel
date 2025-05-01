@@ -414,7 +414,7 @@ public class DiffImage extends JPanel {
 		southPanel3.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 		southPanel3.add(southPixelLabel);
 		
-		Container southPanel = javax.swing.Box.createVerticalBox();
+		Container southPanel = Box.createVerticalBox();
 		southPanel.add(southPanel1);
 		southPanel.add(southPanel2);
 		southPanel.add(southPanel3);

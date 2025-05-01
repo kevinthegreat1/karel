@@ -9,11 +9,11 @@ public class CommandLineProgramMarty extends CommandLineProgram {
 		if (isApplet == null) {
 			try {
 				isApplet = false;
-				if (java.lang.System.getSecurityManager() != null) {
+				if (System.getSecurityManager() != null) {
 					// applets run with security managers enabled
 					isApplet = true;
 				} else {
-					File currentDir = new File(java.lang.System.getProperty("user.dir"));
+					File currentDir = new File(System.getProperty("user.dir"));
 					currentDir.exists();  // calling this will trigger security exception if applet
 				}
 			} catch (SecurityException sex) {

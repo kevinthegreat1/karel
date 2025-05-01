@@ -264,7 +264,7 @@ public abstract class GInteractor extends GObject implements GResizable {
 
 	public void setParent(GContainer paramGContainer) {
 		if (paramGContainer == null) {
-			java.awt.Container parent = this.interactor.getParent();
+			Container parent = this.interactor.getParent();
 			if (parent != null) {
 				parent.remove(this.interactor);
 				parent.validate();

@@ -21,31 +21,31 @@ public class LimitedPrintStream extends PrintStream {
     private int maxCalls = 0;
     private int maxChars = 0;
     
-    public LimitedPrintStream(java.io.OutputStream stream) {
+    public LimitedPrintStream(OutputStream stream) {
         this(stream, MAX_CALLS, MAX_CHARS);
     }
     
-    public LimitedPrintStream(File file) throws java.io.FileNotFoundException {
+    public LimitedPrintStream(File file) throws FileNotFoundException {
         this(file, MAX_CALLS, MAX_CHARS);
     }
 
-    public LimitedPrintStream(String file) throws java.io.FileNotFoundException {
+    public LimitedPrintStream(String file) throws FileNotFoundException {
         this(file, MAX_CALLS, MAX_CHARS);
     }
     
-    public LimitedPrintStream(java.io.OutputStream stream, int maxCalls, int maxChars) {
+    public LimitedPrintStream(OutputStream stream, int maxCalls, int maxChars) {
         super(stream);
         this.maxCalls = maxCalls;
         this.maxChars = maxChars;
     }
     
-    public LimitedPrintStream(File file, int maxCalls, int maxChars) throws java.io.FileNotFoundException {
+    public LimitedPrintStream(File file, int maxCalls, int maxChars) throws FileNotFoundException {
         super(file);
         this.maxCalls = maxCalls;
         this.maxChars = maxChars;
     }
 
-    public LimitedPrintStream(String file, int maxCalls, int maxChars) throws java.io.FileNotFoundException {
+    public LimitedPrintStream(String file, int maxCalls, int maxChars) throws FileNotFoundException {
         super(file);
         this.maxCalls = maxCalls;
         this.maxChars = maxChars;

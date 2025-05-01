@@ -426,7 +426,7 @@ public class IOUtils {
 	 */
 	public static void writeEntireFile(String text, File file) {
 		try {
-			java.io.PrintStream output = new java.io.PrintStream(file);
+			PrintStream output = new PrintStream(file);
 			output.print(text);
 			output.close();
 		} catch (FileNotFoundException fnfe) {
