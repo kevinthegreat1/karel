@@ -56,3 +56,10 @@ You are now ready to write and run your Karel or ACM program.
         super.main(args);
     }
 ```
+
+### (Optional) Attach Sources
+To read the source code and documentation inside the Karel or ACM library, you need attach sources.
+1. Download the `sources` jar published alongside the `karel` or `acm` jars.
+2. Open a Karel or ACM source file.
+3. Click `Choose Sources...` in the popup on the top right.
+4. Select the `sources` jar you downloaded.
