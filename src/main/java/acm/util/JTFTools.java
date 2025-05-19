@@ -1064,18 +1064,18 @@ public class JTFTools {
    }
 
    private static void transformClass(Object var0, InputStream var1, OutputStream var2) {
-      Object var3 = null;
+      Method var3 = null;
 
       try {
          Class[] var4 = new Class[]{Class.forName("java.io.InputStream"), Class.forName("java.io.OutputStream")};
-         var7 = var0.getClass().getMethod("transform", var4);
+         var3 = var0.getClass().getMethod("transform", var4);
       } catch (Exception var6) {
          throw new ErrorException("exportJar: Illegal class transformer object");
       }
 
       try {
          Object[] var8 = new Object[]{var1, var2};
-         var7.invoke(var0, var8);
+         var3.invoke(var0, var8);
       } catch (Exception var5) {
          throw new ErrorException(var5);
       }
