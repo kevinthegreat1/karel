@@ -1,5 +1,6 @@
 package acm.util;
 
+import acm.program.CommandLineProgram;
 import acm.program.Program;
 
 import javax.swing.*;
@@ -8,9 +9,9 @@ import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -31,7 +32,6 @@ public class JTFTools {
    private static HashMap<String, String> fontFamilyTable = null;
    private static HashMap<Thread, Applet> appletTable = new HashMap();
    private static Applet mostRecentApplet = null;
-   private static SecurityManager managerThatFails = null;
    private static String debugOptions = null;
 
    private JTFTools() {
@@ -373,62 +373,89 @@ public class JTFTools {
       }
    }
 
-   public static String getMainClass() {
-      String var0 = null;
+	/* Static method: readMainClassFromCommandLine(line) */
+	/**
+	 * Attempts to read the name of the main class from the specified command
+	 * line.  This strategy is a heuristic and will probably fail in many
+	 * cases, but it will probably work in enough contexts to be useful.
+	 * As noted in the documentation for the <code>main</code> method,
+	 * programs can always avoid the need for this method by supplying their
+	 * own version of <code>main</code>.
+	 *
+	 * @usage String className = readMainClassFromCommandLine(line);
+	 * @param line The command line
+	 * @return The name of the main class, or <code>null</code>
+	 */
+	public static String readMainClassFromCommandLine(String line) {
+		if (testDebugOption("main")) {
+			System.out.println("Read class from command line: " + line);
+		}
+		if (line == null) return null;
+		boolean jarFlag = false;
+		try {
+			StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(line));
+			tokenizer.resetSyntax();
+			tokenizer.wordChars(33, 255);
+			tokenizer.quoteChar('"');
+			tokenizer.quoteChar('\'');
+			tokenizer.whitespaceChars(' ', ' ');
+			tokenizer.whitespaceChars('\t', '\t');
+			boolean cmdRead = false;
+			while (true) {
+				int tt = tokenizer.nextToken();
+				String token = tokenizer.sval;
+				switch (tt) {
+					case StreamTokenizer.TT_EOF:
+						return null;
+					case StreamTokenizer.TT_WORD: case '"': case '\'':
+						break;
+					default:
+						return null;
+				}
+				if (cmdRead) {
+					if (token.startsWith("-")) {
+						if (token.equals("-jar")) {
+							jarFlag = true;
+						} else if (token.equals("-cp") || token.equals("-classpath")) {
+							tokenizer.nextToken();
+						}
+					} else {
+						if (jarFlag) return readMainClassFromManifest(token);
+						if (testDebugOption("main")) {
+							System.out.println("Main class = " + token);
+						}
+						return token;
+					}
+				} else {
+					cmdRead = true;
+				}
+			}
+		} catch (IOException ex) {
+			/* Empty */
+		}
+		return null;
+	}
 
-      try {
-         var0 = System.getProperty("java.main");
-      } catch (Exception var2) {
-      }
+	/**
+	 * Processes the class name to be passed to {@link Class#forName(String)}
+	 */
+	public static String processClassName(String className) {
+		if (className.endsWith(".class")) {
+			className = className.substring(0, className.length() - 6);
+		}
+		className = className.replace('/', '.');
+		CommandLineProgram.checkIfHeadless(className);
+		return className;
+	}
 
-      if (var0 == null) {
-         var0 = readMainClassFromClassPath();
-      }
-
-      if (var0 == null) {
-         String var1 = getCommandLine();
-         var0 = readMainClassFromCommandLine(var1);
-      }
-
-      return var0;
-   }
-
-   public static boolean checkIfLoaded(String var0) {
-      if (Platform.compareVersion("1.2") < 0) {
-         return false;
-      } else {
-         boolean var1 = false;
-
-         try {
-            if (System.getSecurityManager() != null) {
-               return false;
-            }
-
-            if (managerThatFails == null) {
-               try {
-                  Class var2 = Class.forName("acm.util.SecurityManagerThatFails");
-                  managerThatFails = (SecurityManager)var2.newInstance();
-               } catch (Exception var12) {
-                  return false;
-               }
-            }
-
-            System.setSecurityManager(managerThatFails);
-
-            try {
-               var1 = Class.forName(var0) != null;
-            } catch (ExceptionInInitializerError var9) {
-               var1 = true;
-            } catch (NoClassDefFoundError var10) {
-            } finally {
-               System.setSecurityManager((SecurityManager)null);
-            }
-         } catch (Exception var13) {
-         }
-
-         return var1;
-      }
-   }
+	public static Optional<Object> newInstanceFromName(String className) {
+		try {
+			return Optional.of(Class.forName(className).newInstance());
+		} catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+			/* Empty */
+		}
+		return Optional.empty();
+	}
 
    public static void terminateAppletThreads(Applet var0) {
       try {
@@ -752,141 +779,6 @@ public class JTFTools {
          }
       } catch (IOException var6) {
          return null;
-      }
-   }
-
-   private static String readMainClassFromCommandLine(String var0) {
-      if (testDebugOption("main")) {
-         System.out.println("Read class from command line: " + var0);
-      }
-
-      if (var0 == null) {
-         return null;
-      } else {
-         boolean var1 = false;
-
-         try {
-            StreamTokenizer var2 = new StreamTokenizer(new StringReader(var0));
-            var2.resetSyntax();
-            var2.wordChars(33, 255);
-            var2.quoteChar(34);
-            var2.quoteChar(39);
-            var2.whitespaceChars(32, 32);
-            var2.whitespaceChars(9, 9);
-            boolean var3 = false;
-
-            while(true) {
-               int var4 = var2.nextToken();
-               String var5 = var2.sval;
-               switch (var4) {
-                  case -3:
-                  case 34:
-                  case 39:
-                     if (var3) {
-                        if (!var5.startsWith("-")) {
-                           if (var1) {
-                              return readMainClassFromManifest(var5);
-                           }
-
-                           if (testDebugOption("main")) {
-                              System.out.println("Main class = " + var5);
-                           }
-
-                           return var5;
-                        }
-
-                        if (var5.equals("-jar")) {
-                           var1 = true;
-                        } else if (var5.equals("-cp") || var5.equals("-classpath")) {
-                           var2.nextToken();
-                        }
-                     } else {
-                        var3 = true;
-                     }
-                     break;
-                  case -1:
-                     return null;
-                  default:
-                     return null;
-               }
-            }
-         } catch (IOException var6) {
-            return null;
-         }
-      }
-   }
-
-   private static String readMainClassFromClassPath() {
-      String var0 = null;
-      String var1 = System.getProperty("java.class.path");
-      if (var1 == null) {
-         var1 = System.getProperty("user.dir");
-      }
-
-      if (var1 == null) {
-         return null;
-      } else {
-         if (testDebugOption("main")) {
-            System.out.println("Read class from class path: " + var1);
-         }
-
-         StringTokenizer var2 = new StringTokenizer(var1, ":;");
-
-         while(var2.hasMoreTokens()) {
-            String var3 = var2.nextToken();
-            File var4 = new File(var3);
-            String[] var5 = null;
-            if (var4.isDirectory()) {
-               var5 = var4.list();
-            } else if (var3.endsWith(".jar") && !nameAppears(var3, SKIP_JARS)) {
-               try {
-                  ZipFile var6 = new ZipFile(var4);
-                  ArrayList var7 = new ArrayList();
-                  Enumeration var8 = var6.entries();
-
-                  while(var8.hasMoreElements()) {
-                     var7.add(((ZipEntry)var8.nextElement()).getName());
-                  }
-
-                  var5 = new String[var7.size()];
-
-                  for(int var9 = 0; var9 < var5.length; ++var9) {
-                     var5[var9] = (String)var7.get(var9);
-                  }
-               } catch (IOException var12) {
-                  var5 = null;
-               }
-            }
-
-            if (var5 != null) {
-               for(int var13 = 0; var13 < var5.length; ++var13) {
-                  String var14 = var5[var13];
-                  if (var14.endsWith(".class")) {
-                     String var15 = var14.substring(0, var14.lastIndexOf(".class"));
-                     if (var15.indexOf("/") == -1 && checkIfLoaded(var15)) {
-                        try {
-                           Class var16 = Class.forName(var15);
-                           Class[] var10 = new Class[]{var5.getClass()};
-                           if (var16.getMethod("main", var10) != null) {
-                              if (testDebugOption("main")) {
-                                 System.out.println("Main class = " + var15);
-                              }
-
-                              if (var0 != null) {
-                                 return null;
-                              }
-
-                              var0 = var15;
-                           }
-                        } catch (Exception var11) {
-                        }
-                     }
-                  }
-               }
-            }
-         }
-
-         return var0;
       }
    }
 

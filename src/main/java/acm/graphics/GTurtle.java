@@ -176,7 +176,7 @@ public class GTurtle extends GObject {
       return false;
    }
 
-   public static void main(String[] var0) {
+   public void main(String[] var0) {
       String[] var1 = new String[var0.length + 1];
 
       for(int var2 = 0; var2 < var0.length; ++var2) {
@@ -184,11 +184,11 @@ public class GTurtle extends GObject {
       }
 
       var1[var0.length] = "program=acm.program.GObjectProgram";
-      Program.main(var1);
+      Program.main(var1, this);
    }
 
    protected void start() {
-      this.start((String[])null);
+      this.start(null);
    }
 
    protected void start(String[] var1) {

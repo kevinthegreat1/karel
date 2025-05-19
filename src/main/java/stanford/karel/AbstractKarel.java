@@ -5,13 +5,13 @@
 
 package stanford.karel;
 
-import acm.program.*;
-import acm.util.*;
+import acm.program.CommandLineProgram;
+import acm.program.ProgramInterface;
+import acm.util.ErrorException;
 import stanford.cs106.gui.GuiUtils;
+
 import java.awt.*;
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.util.Map;
 
 /**
  * The <code>Karel</code> class represents the simplest possible Karel the Robot
@@ -250,32 +250,16 @@ abstract class AbstractKarel implements KarelInterface, ProgramInterface, Runnab
 
 	/* Entry points for program operation */
 
-	public static void main(String[] args) {
+	public void main(String[] args) {
 		if (!CommandLineProgram.isHeadless()) {
 			GuiUtils.setSystemLookAndFeel();
 		}
-		ArrayList<String> argList = new ArrayList<String>();
-		boolean codeFlag = false;
-		for (int i = 0; i < args.length; i++) {
-			argList.add(args[i]);
-			if (args[i].startsWith("code="))
-				codeFlag = true;
-		}
-		if (!codeFlag) {
-			String className = getMainClassName();
-			if (className.endsWith(".class")) {
-				className = className.substring(0, className.length() - 6);
-			}
-			className = className.replace('/', '.');
-			argList.add("code=" + className);
-		}
-		argList.add("program=stanford.karel.KarelProgram");
-		String[] argArray = new String[argList.size()];
-		for (int i = 0; i < argArray.length; i++) {
-			argArray[i] = argList.get(i);
-		}
-		KarelProgram.main(argArray);
 
+		String[] argArray = new String[args.length + 1];
+		System.arraycopy(args, 0, argArray, 0, args.length);
+		argArray[args.length] = "program=stanford.karel.KarelProgram";
+
+		KarelProgram.main(argArray, this);
 	}
 	
 	public void setParameterTable(Map<String, String> table) {
@@ -372,63 +356,6 @@ abstract class AbstractKarel implements KarelInterface, ProgramInterface, Runnab
 	}
 
 	/* Private methods */
-
-	private static String getMainClassName() {
-		String result = null;
-		String classpath = System.getProperty("java.class.path");
-		if (classpath == null)
-			classpath = System.getProperty("user.dir");
-		if (classpath == null)
-			return null;
-		StringTokenizer tokenizer = new StringTokenizer(classpath, ":;");
-		while (tokenizer.hasMoreTokens()) {
-			String token = tokenizer.nextToken();
-			File file = new File(token);
-			String[] candidates = null;
-			if (file.isDirectory()) {
-				candidates = file.list();
-			} else if (token.endsWith(".jar") && !nameAppears(token, SKIP_JARS)) {
-				try {
-					ZipFile zf = new ZipFile(file);
-					ArrayList<String> list = new ArrayList<String>();
-					Enumeration<?> entries = zf.entries();
-					while (entries.hasMoreElements()) {
-						list.add(((ZipEntry) entries.nextElement()).getName());
-					}
-					candidates = new String[list.size()];
-					for (int i = 0; i < candidates.length; i++) {
-						candidates[i] = list.get(i);
-					}
-					zf.close();
-				} catch (IOException ex) {
-					candidates = null;
-				}
-			}
-			if (candidates != null) {
-				for (int i = 0; i < candidates.length; i++) {
-					String fileName = candidates[i];
-					if (fileName.endsWith(".class")) {
-						String className = fileName.substring(0,
-								fileName.lastIndexOf(".class"));
-						if (className.indexOf("/") == -1
-								&& JTFTools.checkIfLoaded(className)) {
-							try {
-								Class<?> karelClass = Class
-										.forName("stanford.karel.Karel");
-								Class<?> c = Class.forName(className);
-								if (karelClass.isAssignableFrom(c)) {
-									result = className;
-								}
-							} catch (Exception ex) {
-								/* Empty */
-							}
-						}
-					}
-				}
-			}
-		}
-		return result;
-	}
 
 	private static boolean nameAppears(String name, String[] array) {
 		for (int i = 0; i < array.length; i++) {

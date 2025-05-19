@@ -1087,7 +1087,19 @@ public class CommandLineProgram
 		/* Empty */
 	}
 
-	/* Static method: main(args) */
+	/* Method: main(args) */
+	/**
+	 * Instance main method used to start the program.
+	 * An instance main method is used instead of a static main
+	 * in order to use the runtime type of {@code this} to detect the correct program subclass.
+	 *
+	 * @param args An array of string arguments
+	 */
+	public void main(String[] args) {
+		main(args, this);
+	}
+
+	/* Static method: main(args, obj) */
 	/**
 	 * Every application must either contain a "Main-Class" entry in its
 	 * manifest file or include a main method that looks like this, where
@@ -1105,41 +1117,26 @@ public class CommandLineProgram
 	 *
 	 * @param args An array of string arguments
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args, Object obj) {
 		HashMap<String,String> ht = createParameterTable(args);
 		JTFTools.setDebugOptions(ht.get("debug"));
-		String className = ht.get("code");
-		if (className == null) {
-			className = JTFTools.getMainClass();
-		}
-		Class<?> mainClass = null;
-		CommandLineProgram program = null;
-		if (className != null) {
-			if (className.endsWith(".class")) {
-				className = className.substring(0, className.length() - 6);
-			}
-			className = className.replace('/', '.');
-			try {
-				mainClass = Class.forName(className);
-			} catch (ClassNotFoundException ex) {
-				/* Empty */
-			}
-		}
-		if (mainClass != null) {
-			try {
-				Object obj = mainClass.newInstance();
-				if (obj instanceof CommandLineProgram) {
-					program = (CommandLineProgram) obj;
-				} else {
-					throw new ErrorException("Main class does not specify a program");
-				}
-			} catch (IllegalAccessException ex) {
-				/* Empty */
-			} catch (InstantiationException ex) {
-				/* Empty */
-			}
-		}
-		if (program == null) throw new ErrorException("Cannot determine the main class.");
+
+		CommandLineProgram program = Optional.ofNullable(ht.get("code"))
+				.or(() -> Optional.ofNullable(System.getProperty("java.main")))
+				.map(JTFTools::processClassName)
+				.flatMap(JTFTools::newInstanceFromName)
+				.or(() -> Optional.ofNullable(obj))
+				.or(() -> Optional.ofNullable(JTFTools.readMainClassFromCommandLine(JTFTools.getCommandLine()))
+						.map(JTFTools::processClassName)
+						.flatMap(JTFTools::newInstanceFromName)
+				)
+				.map(programObj -> {
+					if (programObj instanceof CommandLineProgram program0) {
+						return program0;
+					} else {
+						throw new ErrorException("Main class does not specify a program");
+					}
+				}).orElseThrow(() -> new ErrorException("Cannot determine the main class."));
 		program.setParameterTable(ht);
 		program.start(null);
 	}
