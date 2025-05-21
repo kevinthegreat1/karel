@@ -1,4 +1,4 @@
-# Karel 2.0.0
+# Karel 3.0.0
 
 ## Highlight
 * Update to Java 24
