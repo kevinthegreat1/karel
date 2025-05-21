@@ -1,5 +1,7 @@
 # Karel and ACM for Java 24 and Above
 
+Download the Karel and ACM jars from [Releases](https://github.com/kevinthegreat1/karel/releases).
+
 ## Usage for IntelliJ Build System
 
 ### Creating a new IntelliJ project using Java 24 or above
@@ -13,6 +15,10 @@
 5. Click `Create` to create the project.
 
 ### Adding Karel or ACM to your project
+
+> [!NOTE]
+> Only add either Karel or ACM, not both. Adding Karel gives you access to ACM as well.
+
 1. Open `File -> Project Structure...`.
 2. Select `Libraries` on the left.
 3. Click the `+` button on the top of the second column from the left.
